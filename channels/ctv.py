@@ -445,9 +445,28 @@ class Bravo(CTVBaseChannel):
         logging.debug('clip url: %r' % url)
 
         page = self.plugin.fetch(url).read().strip()
-        temp = page.split("'")[1]
-        video_url = temp.split('?')[0]
+        manifest_url = page.split("'")[1] + "&hdcore=2.11.3"
 
+        soup = BeautifulStoneSoup(
+                self.plugin.fetch(manifest_url, max_age=self.cache_timeout),
+                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+
+        # TODO: use max_bitrate = int(self.plugin.get_setting('max_bitrate'))
+        # for find the correct clip to play:
+        media = soup.findAll('media')
+        media = media[-1] # Highest for now
+
+        logging.debug("0:" + str(media))
+
+        video_url = manifest_url.split('?', 1)[0]
+        video_url = video_url.rsplit('/', 1)[0] + "/%s" %(media['url'],)
+
+
+        # TODO: Url still not valid, first url adds Seg1-Frag1, have to find
+        # these. As a test add one:
+        video_url = video_url + "Seg1-Frag1"
+
+        # This looks like f4f format, so still work to be done:
         logging.debug("Playing Stream: %s" % (video_url,))
         self.plugin.set_stream_url(video_url)
 
